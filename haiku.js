@@ -1,6 +1,10 @@
 var fs = require('fs');
-var cmudictFile = fs.readFileSync('./cmudict.txt');
-var franklinFile = fs.readFileSync('./Franklin.txt');
+var cmudictFile = customFile('cmudict.txt');
+var franklinFile = customFile('Franklin.txt');
+
+function customFile(file) {
+  return fs.readFileSync('./' + file);
+}
 
 function formatData(data) {
   
@@ -63,14 +67,14 @@ function structurer() {
   return [randSumTo(5), randSumTo(7), randSumTo(5)];
 }
 
-function createHaiku(structure) {
+function dictHaiku(structure) {
   for (var i = 0; i < structure.length; i++) {
     console.log(
       structure[i].map(function(syllables) {
         return chooseWord(syllables);
       }).join(" ")
     )
-  }
+  }{}
 }
 
 function haikuSearch(text) {
@@ -79,6 +83,8 @@ function haikuSearch(text) {
   var dict = formatData(cmudictFile);
   var lines = [[], [], []];
   var syllablesRequired = [5, 7, 5]
+  var iterations = 0
+  var maxIterations = 500;
 
 
   for (var j = 0; j < 3; j++) {
@@ -94,10 +100,14 @@ function haikuSearch(text) {
         }
       }
       i++
+      iterations++
       if (syllables > syllablesRequired[j] || !(textArr[i])) {
         syllables = 0;
         lines[j] = [];
         i = randIndex(textArr);
+      } else if (iterations > maxIterations){
+        console.log("Let's try something else.\nI could not find a haiku\nIn the text you gave.");
+        return 'error';
       }
     }
   }
@@ -108,7 +118,69 @@ function haikuSearch(text) {
   console.log(haiku);
 }
 
-console.log(createHaiku(structurer()));
-console.log(haikuSearch(franklinFile));
+function createHaiku(structureOrText) {
+  var result;
+  if (Array.isArray(structureOrText)) {
+    dictHaiku(structureOrText); 
+  } else if (typeof(structureOrText) === 'object'){
+    result = haikuSearch(structureOrText);
+  }
+  if (typeof(structureOrText) !== 'string' && result !== 'error')
+  setTimeout( function() {
+    console.log("\nWhat a great haiku!\nYou should become a poet.\nWho's our next author?");
+  }, 2000);
+}
 
-// As a next step, let the user choose a random haiku, or a specific text, or they can type in numbers.
+function chooseStructure(numString) {
+  var nums = numString.split("").map(Number);
+  var lines = [[], [], []];
+  var syllablesRequired = [5, 7, 5]
+  var enoughNums = nums.reduce(function(sum, num) {
+        return sum + num;
+      }, 0)
+
+  for (var j = 0; j < 3; j++) {
+    var syllables = 0;
+
+    while (syllables !== syllablesRequired[j]) {
+      lines[j].push(nums.shift());
+      syllables = lines[j].reduce(function(sum, num) {
+        return sum + num;
+      }, 0)
+      if (enoughNums !== 17 || syllables > syllablesRequired[j]) {
+        console.log("These numbers won't work\nDue to bad syllable math.\nPlease type something else:")
+        return "";
+      }
+    }
+  }
+  return lines;
+}
+
+console.log("Welcome to Haiku!\nLet's create a haiku now.\nWho is our author?\n-CMU (auto-structure)\n-CMU (manual - Type numbers without spaces to define structure, ie: 575 or 23345)\n-Ben Franklin\n-Choose your own text file (in the format of filename.txt)\n-Help\n-Quit");
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+
+  process.stdin.on('data', function (text) {
+    text = text.trim();
+    if (text.toUpperCase() === 'CMU') {
+      createHaiku(structurer());
+    } else if (!isNaN(Number(text))) { 
+      createHaiku(chooseStructure(text))
+    } else if (text.toLowerCase() === 'ben franklin') {
+      createHaiku(franklinFile);
+    } else if (text.toLowerCase() === 'help') {
+      console.log("I heard you need help.\nI hope you find this helpful.\nSelect an option:\n-CMU (auto-structure)\n-CMU (manual - Type numbers without spaces to define structure, ie: 575 or 23345)\n-Ben Franklin\n-Choose your own text file (in the format of filename.txt)\n-Help\n-Quit");
+    } else if (text.toLowerCase() === 'quit') {
+      console.log("Thank you for playing.\nIt was fun making haikus.\nPlease play again soon!")
+      process.exit();
+    } else {
+
+      fs.stat(text, function(err, stat) {
+        if (err) {
+          console.log("I don't understand\nPerhaps you made a typo?\nPlease type something else:");
+        } else {
+          createHaiku(customFile(text));
+        }
+      });
+    }
+  });
