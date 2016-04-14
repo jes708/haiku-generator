@@ -3,27 +3,24 @@ var cmudictFile = customFile('cmudict.txt');
 var franklinFile = customFile('Franklin.txt');
 
 function customFile(file) {
-  return fs.readFileSync('./' + file);
+  return fs.readFileSync('./texts/' + file);
 }
 
 function formatData(data) {
   
   var wordBySyllables = {},
-      lines = data.toString().split("\n"),
-      lineSplit,
-      syllables,
-      len
+      lines = data.toString().split("\n");
   lines.forEach(function(line) {
-    lineSplit = line.split("  ");
+    var lineSplit = line.split("  ");
     
     if (lineSplit[1]) {
-      syllables = lineSplit[1].match(/\d/g);
+      var syllables = lineSplit[1].match(/\d/g);
       
       if (syllables) {
-        len = syllables.length 
+        var len = syllables.length 
 
         if (lineSplit[0].slice(-1) !== ")") {
-          buildObj(wordBySyllables, len, lineSplit[0])
+          buildObj(wordBySyllables, len, lineSplit[0]);
         }
       }
     }
@@ -65,6 +62,31 @@ function randIndex(arr) {
 
 function structurer() {
   return [randSumTo(5), randSumTo(7), randSumTo(5)];
+}
+
+function chooseStructure(numString) {
+  var nums = numString.split("").map(Number);
+  var lines = [[], [], []];
+  var syllablesRequired = [5, 7, 5]
+  var enoughNums = nums.reduce(function(sum, num) {
+        return sum + num;
+      }, 0)
+
+  for (var j = 0; j < 3; j++) {
+    var syllables = 0;
+
+    while (syllables !== syllablesRequired[j]) {
+      lines[j].push(nums.shift());
+      syllables = lines[j].reduce(function(sum, num) {
+        return sum + num;
+      }, 0)
+      if (enoughNums !== 17 || syllables > syllablesRequired[j]) {
+        console.log("These numbers won't work\nDue to bad syllable math.\nPlease type something else:")
+        return "";
+      }
+    }
+  }
+  return lines;
 }
 
 function dictHaiku(structure) {
@@ -131,32 +153,12 @@ function createHaiku(structureOrText) {
   }, 2000);
 }
 
-function chooseStructure(numString) {
-  var nums = numString.split("").map(Number);
-  var lines = [[], [], []];
-  var syllablesRequired = [5, 7, 5]
-  var enoughNums = nums.reduce(function(sum, num) {
-        return sum + num;
-      }, 0)
-
-  for (var j = 0; j < 3; j++) {
-    var syllables = 0;
-
-    while (syllables !== syllablesRequired[j]) {
-      lines[j].push(nums.shift());
-      syllables = lines[j].reduce(function(sum, num) {
-        return sum + num;
-      }, 0)
-      if (enoughNums !== 17 || syllables > syllablesRequired[j]) {
-        console.log("These numbers won't work\nDue to bad syllable math.\nPlease type something else:")
-        return "";
-      }
-    }
-  }
-  return lines;
+function optionsHelp() {
+  console.log("-CMU\n-(Type numbers without spaces to define structure, ie: 575 or 23345)\n-Ben Franklin\n-(Choose a text file from the texts folder, ie: King James.txt)\n-Help\n-Quit")
 }
 
-console.log("Welcome to Haiku!\nLet's create a haiku now.\nWho is our author?\n-CMU (auto-structure)\n-CMU (manual - Type numbers without spaces to define structure, ie: 575 or 23345)\n-Ben Franklin\n-Choose your own text file (in the format of filename.txt)\n-Help\n-Quit");
+console.log("Welcome to Haiku!\nLet's create a haiku now.\nHere are your options:");
+  optionsHelp();
   process.stdin.resume();
   process.stdin.setEncoding('utf8');
 
@@ -169,13 +171,14 @@ console.log("Welcome to Haiku!\nLet's create a haiku now.\nWho is our author?\n-
     } else if (text.toLowerCase() === 'ben franklin') {
       createHaiku(franklinFile);
     } else if (text.toLowerCase() === 'help') {
-      console.log("I heard you need help.\nI hope you find this helpful.\nSelect an option:\n-CMU (auto-structure)\n-CMU (manual - Type numbers without spaces to define structure, ie: 575 or 23345)\n-Ben Franklin\n-Choose your own text file (in the format of filename.txt)\n-Help\n-Quit");
+      console.log("I heard you need help.\nI hope you find this helpful.\nSelect an option:");
+      optionsHelp();
     } else if (text.toLowerCase() === 'quit') {
       console.log("Thank you for playing.\nIt was fun making haikus.\nPlease play again soon!")
       process.exit();
     } else {
 
-      fs.stat(text, function(err, stat) {
+      fs.stat('./texts/' + text, function(err, stat) {
         if (err) {
           console.log("I don't understand\nPerhaps you made a typo?\nPlease type something else:");
         } else {
